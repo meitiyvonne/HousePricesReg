@@ -1,0 +1,60 @@
+# .circleci/config.yml
+
+# CircleCI 設定檔版本
+version: 2.1
+
+# 預定義命令，用於重複使用的步驟
+commands:
+  # 安裝依賴項的步驟
+  install_deps:
+    steps:
+      - run:
+          name: Install Core Dependencies
+          # 根據您的檔案位置，從 packages/regression_model/ 讀取 requirements.txt
+          command: pip install -r packages/regression_model/requirements.txt
+      # 安裝本地套件 (將 regression_model 本身以可編輯模式安裝)
+      - run:
+          name: Install Local Package in Editable Mode
+          command: pip install -e packages/regression_model/
+
+# 定義作業 (Job)
+jobs:
+  build_and_test:
+    # 根據 TP 報告的解決方案，使用 Python 3.8.10 基礎映像檔
+    docker:
+      - image: cimg/python:3.8.10 
+    
+    # 設定工作目錄
+    working_directory: ~/project
+
+    steps:
+      # 檢查 Git 程式碼
+      - checkout
+
+      # 恢復 pip 緩存 (加速安裝，使用 requirements.txt 的 checksum 作為緩存 key)
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "packages/regression_model/requirements.txt" }}
+            - v1-dependencies-
+
+      # 執行依賴項安裝
+      - install_deps
+
+      # 儲存 pip 緩存
+      - save_cache:
+          paths:
+            - ./venv
+            - /usr/local/lib/python3.8/site-packages
+          key: v1-dependencies-{{ checksum "packages/regression_model/requirements.txt" }}
+      
+      # 運行 Tox 測試
+      - run:
+          name: Run Tox Tests
+          command: tox
+          
+# 工作流程 (Workflow)
+workflows:
+  version: 2
+  build_test:
+    jobs:
+      - build_and_test
