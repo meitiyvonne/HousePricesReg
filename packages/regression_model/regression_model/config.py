@@ -123,7 +123,7 @@ LOG_FILE_NAME = "regression_model_api.log"
 # 模型版本號 (使用 Semantic Versioning)
 # 當您對模型進行重大修改時（如改變特徵或演算法），應該更新這個版本號
 # MODEL_VERSION = '0.0.1'
-MODEL_VERSION = '0.0.2'
+MODEL_VERSION = '0.0.5'
 
 # 模型儲存名稱 (使用版本號)
 PIPELINE_NAME = f"lasso_regression_output_v{MODEL_VERSION}.pkl"
