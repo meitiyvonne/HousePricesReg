@@ -112,3 +112,22 @@ QUAL_MAPPINGS = {
 
 # Variables to apply the mapping to
 MAP_VARS = list(QUAL_MAPPINGS.keys())
+
+
+# ==============================================================================
+# PARTIE-6: Versioning and Logging
+# ==============================================================================
+# 設定日誌名稱
+LOG_FILE_NAME = "regression_model_api.log"
+
+# 模型版本號 (使用 Semantic Versioning)
+# 當您對模型進行重大修改時（如改變特徵或演算法），應該更新這個版本號
+MODEL_VERSION = '0.0.1'
+
+# 模型儲存名稱 (使用版本號)
+PIPELINE_NAME = f"lasso_regression_output_v{MODEL_VERSION}.pkl"
+
+# 預測時使用的模型名稱（確保預測時載入的是最新版本）
+# 注意：這個變數將在後續步驟中被 train_pipeline.py 中的代碼替換
+# 為了 Part-6 的工作，暫時保持與 PIPELINE_NAME 一致，以便在 predict.py 中使用
+SAVED_PIPELINE_FILE = PIPELINE_NAME
