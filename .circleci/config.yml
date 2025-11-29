@@ -5,14 +5,13 @@ version: 2.1
 
 # 預定義命令，用於重複使用的步驟
 commands:
-  # 安裝依賴項的步驟 (保留您現有的安裝邏輯)
+  # 安裝依賴項的步驟
   install_deps:
     steps:
       - run:
           name: Install Core Dependencies
-          # 注意：這裡使用您專案的 requirements.txt 路徑
           command: pip install -r packages/regression_model/requirements.txt
-      # 安裝本地套件 (將 regression_model 本身以可編輯模式安裝)
+      # 安裝本地套件
       - run:
           name: Install Local Package in Editable Mode
           command: pip install -e packages/regression_model/
@@ -24,7 +23,6 @@ jobs:
   # ----------------------------------------------------
   build_and_test:
     docker:
-      # 保留您現有的映像檔版本
       - image: cimg/python:3.8.10 
     
     working_directory: ~/project
@@ -32,7 +30,7 @@ jobs:
     steps:
       - checkout
 
-      # 恢復 pip 緩存 (路徑也保持不變)
+      # 恢復 pip 緩存
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "packages/regression_model/requirements.txt" }}
@@ -54,11 +52,10 @@ jobs:
           command: tox
 
   # ----------------------------------------------------
-  # 2. 部署 (deploy) Job (新增)
+  # 2. 部署 (deploy) Job (已修正步驟結構，移除 when: manual)
   # ----------------------------------------------------
   deploy:
     docker:
-      # 部署 Job 也可以使用相同的映像檔
       - image: cimg/python:3.8.10
     
     working_directory: ~/project
@@ -70,19 +67,14 @@ jobs:
       - run:
           name: Install Deployment Tools
           command: |
-            # 必須安裝 setuptools, wheel 和 twine
             pip install setuptools wheel twine
 
-      # 部署到 PyPI/Gemfury
+      # 部署到 PyPI/Gemfury (注意：這裡移除了錯誤的 when: manual)
       - run:
           name: Deploy Package
-          # 這裡使用 python setup.py 創建發行檔案
           command: |
             python setup.py sdist bdist_wheel
-            # 使用 twine 上傳，TWINE_USERNAME 和 TWINE_PASSWORD/TOKEN 需在 CircleCI 設定
             twine upload dist/* --non-interactive
-          # 設置為 Manual 觸發 (可選，但安全)
-          when: manual 
 
 
 # 定義工作流程 (Workflow)
@@ -98,12 +90,13 @@ workflows:
                 - main
                 - partie-8-deploiement-continu
 
-      # 部署 Job (只有在測試成功，且是 Tag 時才運行)
+      # 部署 Job (使用 type: approval 實現手動批准)
       - deploy:
           requires:
             - build_and_test # 測試必須成功
+          type: approval # <--- 這是正確實現手動批准的方式
           filters:
             branches:
               ignore: /.*/ # 忽略所有分支上的自動執行
             tags:
-              only: /v[0-9]+(\.[0-9]+)*([a-zA-Z0-9]+)*/ # 匹配版本標籤 (e.g., v0.0.2)
+              only: /v[0-9]+(\.[0-9]+)*([a-zA-Z0-9]+)*/ # 匹配版本標籤 (e.g., v0.0.4)
