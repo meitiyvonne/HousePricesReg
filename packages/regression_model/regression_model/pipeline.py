@@ -1,6 +1,6 @@
 from sklearn.pipeline import Pipeline
 
-import preprocessors as pp
+import packages.regression_model.regression_model.processing.preprocessors as pp
 
 
 CATEGORICAL_VARS = ['MSZoning',
