@@ -5,12 +5,12 @@ version: 2.1
 
 # 預定義命令，用於重複使用的步驟
 commands:
-  # 安裝依賴項的步驟
+  # 安裝依賴項的步驟 (保留您現有的安裝邏輯)
   install_deps:
     steps:
       - run:
           name: Install Core Dependencies
-          # 根據您的檔案位置，從 packages/regression_model/ 讀取 requirements.txt
+          # 注意：這裡使用您專案的 requirements.txt 路徑
           command: pip install -r packages/regression_model/requirements.txt
       # 安裝本地套件 (將 regression_model 本身以可編輯模式安裝)
       - run:
@@ -19,19 +19,20 @@ commands:
 
 # 定義作業 (Job)
 jobs:
+  # ----------------------------------------------------
+  # 1. 測試 (build_and_test) Job 
+  # ----------------------------------------------------
   build_and_test:
-    # 根據 TP 報告的解決方案，使用 Python 3.8.10 基礎映像檔
     docker:
+      # 保留您現有的映像檔版本
       - image: cimg/python:3.8.10 
     
-    # 設定工作目錄
     working_directory: ~/project
 
     steps:
-      # 檢查 Git 程式碼
       - checkout
 
-      # 恢復 pip 緩存 (加速安裝，使用 requirements.txt 的 checksum 作為緩存 key)
+      # 恢復 pip 緩存 (路徑也保持不變)
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "packages/regression_model/requirements.txt" }}
@@ -51,10 +52,58 @@ jobs:
       - run:
           name: Run Tox Tests
           command: tox
-          
-# 工作流程 (Workflow)
+
+  # ----------------------------------------------------
+  # 2. 部署 (deploy) Job (新增)
+  # ----------------------------------------------------
+  deploy:
+    docker:
+      # 部署 Job 也可以使用相同的映像檔
+      - image: cimg/python:3.8.10
+    
+    working_directory: ~/project
+
+    steps:
+      - checkout
+      
+      # 安裝部署工具
+      - run:
+          name: Install Deployment Tools
+          command: |
+            # 必須安裝 setuptools, wheel 和 twine
+            pip install setuptools wheel twine
+
+      # 部署到 PyPI/Gemfury
+      - run:
+          name: Deploy Package
+          # 這裡使用 python setup.py 創建發行檔案
+          command: |
+            python setup.py sdist bdist_wheel
+            # 使用 twine 上傳，TWINE_USERNAME 和 TWINE_PASSWORD/TOKEN 需在 CircleCI 設定
+            twine upload dist/* --non-interactive
+          # 設置為 Manual 觸發 (可選，但安全)
+          when: manual 
+
+
+# 定義工作流程 (Workflow)
 workflows:
   version: 2
-  build_test:
+  build_test_and_deploy:
     jobs:
-      - build_and_test
+      # 測試 Job
+      - build_and_test:
+          filters:
+            branches:
+              only:
+                - main
+                - partie-8-deploiement-continu
+
+      # 部署 Job (只有在測試成功，且是 Tag 時才運行)
+      - deploy:
+          requires:
+            - build_and_test # 測試必須成功
+          filters:
+            branches:
+              ignore: /.*/ # 忽略所有分支上的自動執行
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*([a-zA-Z0-9]+)*/ # 匹配版本標籤 (e.g., v0.0.2)
