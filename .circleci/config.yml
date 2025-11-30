@@ -97,6 +97,9 @@ workflows:
           type: approval # <--- 這是正確實現手動批准的方式
           filters:
             branches:
-              ignore: /.*/ # 忽略所有分支上的自動執行
+              # ignore: /.*/ # 忽略所有分支上的自動執行
+              only:
+                - main  # <--- 只在 main 分支的 Commit Push 時包含此 Job
             tags:
-              only: /v[0-9]+(\.[0-9]+)*([a-zA-Z0-9]+)*/ # 匹配版本標籤 (e.g., v0.0.4)
+              # only: /v[0-9]+(\.[0-9]+)*([a-zA-Z0-9]+)*/ # 匹配版本標籤 (e.g., v0.0.4)
+              ignore: /.*/  # <--- 忽略所有 Tag 觸發
